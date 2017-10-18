@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/hidu/mysql-schema-sync/internal"
+	"github.com/admpub/mysql-schema-sync/internal"
 	"log"
 	"os"
 	"strings"
