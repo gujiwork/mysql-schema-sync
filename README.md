@@ -56,7 +56,7 @@ mysql表结构自动同步工具
 #### json配置项说明
 source: 数据库同步源  
 dest:   待同步的数据库  
-tables： 数组，配置需要同步的表，为空则是不限制，eg: ["goods","order_*"]
+tables： 数组，配置需要同步的表，为空则是不限制，eg: ["goods","order_*"]  
 skip_tables 数组，配置需要跳过的表，为空则是不限制，eg: ["goods","order_*"]  
 alter_ignore： 忽略修改的配置，表名为tableName，可以配置 column 和 index，支持通配符 *  
 email ： 同步完成后发送邮件通知信息  
