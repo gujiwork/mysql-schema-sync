@@ -14,6 +14,7 @@ type Statics struct {
 	Config    *Config
 	failedNum int
 	result    *string
+	diff      bool
 }
 
 type tableStatics struct {
@@ -30,6 +31,7 @@ func newStatics(cfg *Config) *Statics {
 		tables:    make([]*tableStatics, 0),
 		Config:    cfg,
 		failedNum: -1,
+		diff:      true,
 	}
 }
 
@@ -72,6 +74,11 @@ func (s *Statics) FailedNum() int {
 
 func (s *Statics) StartTime() time.Time {
 	return s.timer.start
+}
+
+func (s *Statics) Diff(on bool) *Statics {
+	s.diff = on
+	return s
 }
 
 func (s *Statics) EndTime() time.Time {
@@ -137,7 +144,9 @@ func (s *Statics) toHTML() string {
 		code += html.EscapeString(tb.alter.String()) + "\n\n"
 	}
 	code += "</pre>\n\n"
-
+	if !s.diff {
+		return code
+	}
 	code += "<h3>Detail</h3>\n"
 	code += `<table class='table table-bordered tb_1'>
 		<thead>
