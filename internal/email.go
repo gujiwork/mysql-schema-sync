@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+type SendEmail interface {
+	SendEmail(string, string)
+}
+
 // EmailStruct email conf info
 type EmailStruct struct {
 	SendMailAble bool   `json:"send_mail"`

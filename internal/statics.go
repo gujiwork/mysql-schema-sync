@@ -8,11 +8,12 @@ import (
 	"time"
 )
 
-type statics struct {
+type Statics struct {
 	timer     *myTimer
 	tables    []*tableStatics
 	Config    *Config
 	failedNum int
+	result    *string
 }
 
 type tableStatics struct {
@@ -23,8 +24,8 @@ type tableStatics struct {
 	schemaAfter string
 }
 
-func newStatics(cfg *Config) *statics {
-	return &statics{
+func newStatics(cfg *Config) *Statics {
+	return &Statics{
 		timer:     newMyTimer(),
 		tables:    make([]*tableStatics, 0),
 		Config:    cfg,
@@ -32,7 +33,7 @@ func newStatics(cfg *Config) *statics {
 	}
 }
 
-func (s *statics) newTableStatics(table string, sd *TableAlterData) *tableStatics {
+func (s *Statics) newTableStatics(table string, sd *TableAlterData) *tableStatics {
 	ts := &tableStatics{
 		timer: newMyTimer(),
 		table: table,
@@ -44,15 +45,20 @@ func (s *statics) newTableStatics(table string, sd *TableAlterData) *tableStatic
 	return ts
 }
 
-func (s *statics) String() string {
-	return s.toHTML()
+func (s *Statics) String() string {
+	if s.result != nil {
+		return *s.result
+	}
+	result := s.toHTML()
+	s.result = &result
+	return result
 }
 
-func (s *statics) ChangeTableNum() int {
+func (s *Statics) ChangeTableNum() int {
 	return len(s.tables)
 }
 
-func (s *statics) ChangeTables() []string {
+func (s *Statics) ChangeTables() []string {
 	tables := make([]string, len(s.tables))
 	for k, t := range s.tables {
 		tables[k] = t.table
@@ -60,23 +66,23 @@ func (s *statics) ChangeTables() []string {
 	return tables
 }
 
-func (s *statics) FailedNum() int {
+func (s *Statics) FailedNum() int {
 	return s.alterFailedNum()
 }
 
-func (s *statics) StartTime() time.Time {
+func (s *Statics) StartTime() time.Time {
 	return s.timer.start
 }
 
-func (s *statics) EndTime() time.Time {
+func (s *Statics) EndTime() time.Time {
 	return s.timer.end
 }
 
-func (s *statics) Elapsed() time.Duration {
+func (s *Statics) Elapsed() time.Duration {
 	return s.timer.end.Sub(s.timer.start)
 }
 
-func (s *statics) toHTML() string {
+func (s *Statics) toHTML() string {
 	cfg := s.Config
 	hostName, _ := os.Hostname()
 	code := "<h2>Info</h2>\n<pre>"
@@ -97,7 +103,7 @@ func (s *statics) toHTML() string {
 	code += "</pre>\n"
 	code += "<h2>Result</h2>\n"
 	code += "<h3>Tables</h3>\n"
-	code += `<table class='tb_1'>
+	code += `<table class='table table-bordered tb_1'>
 		<thead>
 			<tr>
 			<th width="60px">no</th>
@@ -133,13 +139,13 @@ func (s *statics) toHTML() string {
 	code += "</pre>\n\n"
 
 	code += "<h3>Detail</h3>\n"
-	code += `<table class='tb_1'>
+	code += `<table class='table table-bordered tb_1'>
 		<thead>
 			<tr>
 			<th width="40px">no</th>
 			<th width="80px">table</th>
-			<th>&nbsp;</th>
-			<th>&nbsp;</th>
+			<th>source</th>
+			<th>destination</th>
 			</tr>
 		</thead><tbody>
 		`
@@ -154,7 +160,7 @@ func (s *statics) toHTML() string {
 				code += "<font color=red>failed," + tb.alterRet.Error() + "</font>"
 			}
 		} else {
-			code += "no sync"
+			code += "(no sync)"
 		}
 		code += "</td>\n"
 		code += "<td valign=top><b>source schema:</b><br/>" + htmlPre(tb.alter.SchemaDiff.Source.SchemaRaw) + "</td>\n"
@@ -170,7 +176,7 @@ func (s *statics) toHTML() string {
 	return code
 }
 
-func (s *statics) alterFailedNum() int {
+func (s *Statics) alterFailedNum() int {
 	if s.failedNum > -1 {
 		return s.failedNum
 	}
@@ -184,7 +190,7 @@ func (s *statics) alterFailedNum() int {
 	return n
 }
 
-func (s *statics) sendMailNotice() {
+func (s *Statics) sendMailNotice() {
 	cfg := s.Config
 	if cfg.Email == nil {
 		log.Println("mail conf is not set,skip send mail")

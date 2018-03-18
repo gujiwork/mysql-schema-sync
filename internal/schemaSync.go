@@ -253,7 +253,7 @@ func (sc *SchemaSync) SyncSQL4Dest(sqlStr string, sqls []string) error {
 }
 
 // CheckSchemaDiff 执行最终的diff
-func CheckSchemaDiff(cfg *Config) *statics {
+func CheckSchemaDiff(cfg *Config) *Statics {
 	statics := newStatics(cfg)
 	defer (func() {
 		statics.timer.stop()
