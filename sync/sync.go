@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/admpub/mysql-schema-sync/internal"
-	"github.com/webx-top/com"
 )
 
 func Sync(c *Config, mc *EmailConfig) (sta *internal.Statics, err error) {
@@ -23,7 +22,6 @@ func Sync(c *Config, mc *EmailConfig) (sta *internal.Statics, err error) {
 			return
 		}
 		cfg.AlterIgnore = *to
-		com.Dump(cfg.AlterIgnore)
 	}
 
 	if mc != nil {
