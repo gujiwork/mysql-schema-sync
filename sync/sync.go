@@ -15,9 +15,12 @@ func Sync(c *Config, mc *EmailConfig) (sta *internal.Statics, err error) {
 	cfg.Sync = c.Sync
 	cfg.Drop = c.Drop
 	c.AlterIgnore = strings.TrimSpace(c.AlterIgnore)
+	c.AlterIgnore = strings.TrimLeft(c.AlterIgnore, `{`)
+	c.AlterIgnore = strings.TrimRight(c.AlterIgnore, `}`)
+	c.AlterIgnore = strings.TrimRight(c.AlterIgnore, `,`)
 	if len(c.AlterIgnore) > 0 {
 		to := &map[string]*internal.AlterIgnoreTable{}
-		err = internal.ParseJSON(`{`+strings.TrimRight(c.AlterIgnore, `,`)+`}`, &to)
+		err = internal.ParseJSON(`{`+c.AlterIgnore+`}`, &to)
 		if err != nil {
 			return
 		}
