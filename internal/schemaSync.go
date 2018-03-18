@@ -253,11 +253,11 @@ func (sc *SchemaSync) SyncSQL4Dest(sqlStr string, sqls []string) error {
 }
 
 // CheckSchemaDiff 执行最终的diff
-func CheckSchemaDiff(cfg *Config) {
+func CheckSchemaDiff(cfg *Config) *statics {
 	statics := newStatics(cfg)
 	defer (func() {
 		statics.timer.stop()
-		statics.sendMailNotice(cfg)
+		statics.sendMailNotice()
 	})()
 
 	sc := NewSchemaSync(cfg)
@@ -347,4 +347,5 @@ run_sync:
 		log.Println("execute_all_sql_done,success_total:", countSuccess, "failed_total:", countFailed)
 	}
 
+	return statics
 }
