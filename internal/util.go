@@ -26,7 +26,12 @@ func loadJSONFile(jsonPath string, val interface{}) error {
 	if err != nil {
 		return err
 	}
-	lines := strings.Split(string(bs), "\n")
+	return ParseJSON(string(bs), val)
+}
+
+// ParseJSON parse json
+func ParseJSON(content string, val interface{}) error {
+	lines := strings.Split(content, "\n")
 	var bf bytes.Buffer
 	for _, line := range lines {
 		lineNew := strings.TrimSpace(line)

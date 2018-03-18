@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/admpub/mysql-schema-sync/internal"
+	"github.com/webx-top/com"
 )
 
 func Sync(c *Config, mc *EmailConfig) (sta *internal.Statics, err error) {
@@ -14,6 +15,16 @@ func Sync(c *Config, mc *EmailConfig) (sta *internal.Statics, err error) {
 	cfg.DestDSN = c.DestDSN
 	cfg.Sync = c.Sync
 	cfg.Drop = c.Drop
+	c.AlterIgnore = strings.TrimSpace(c.AlterIgnore)
+	if len(c.AlterIgnore) > 0 {
+		to := &map[string]*internal.AlterIgnoreTable{}
+		err = internal.ParseJSON(`{`+strings.TrimRight(c.AlterIgnore, `,`)+`}`, &to)
+		if err != nil {
+			return
+		}
+		cfg.AlterIgnore = *to
+		com.Dump(cfg.AlterIgnore)
+	}
 
 	if mc != nil {
 		cfg.Email = &internal.EmailStruct{

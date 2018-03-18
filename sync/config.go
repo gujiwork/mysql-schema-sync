@@ -1,13 +1,14 @@
 package sync
 
 type Config struct {
-	Sync       bool
-	Drop       bool
-	SourceDSN  string
-	DestDSN    string
-	Tables     string
-	SkipTables string
-	MailTo     string
+	Sync        bool
+	Drop        bool
+	SourceDSN   string
+	DestDSN     string
+	AlterIgnore string
+	Tables      string
+	SkipTables  string
+	MailTo      string
 }
 
 type EmailConfig struct {
