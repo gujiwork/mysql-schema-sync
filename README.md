@@ -38,8 +38,10 @@ mysql表结构自动同步工具
             "foreign":[]
         }
       },
-      //  tables: table to check schema,default is all.eg :["order_*","goods"]
+      //  tables: 要同步的表，默认为全部。例如 :["order_*","goods"]
       "tables":[],
+      //  skip_tables: 要跳过的表。例如 :["order_*","goods"]
+      "skip_tables":[],
       //有变动或者失败时，邮件接收人
       "email":{
           "send_mail":false,
@@ -54,7 +56,8 @@ mysql表结构自动同步工具
 #### json配置项说明
 source: 数据库同步源  
 dest:   待同步的数据库  
-tables： 数组，配置需要同步的表，为空则是不限制，eg: ["goods","order_*"]  
+tables： 数组，配置需要同步的表，为空则是不限制，eg: ["goods","order_*"]
+skip_tables 数组，配置需要跳过的表，为空则是不限制，eg: ["goods","order_*"]  
 alter_ignore： 忽略修改的配置，表名为tableName，可以配置 column 和 index，支持通配符 *  
 email ： 同步完成后发送邮件通知信息  
 
@@ -104,6 +107,9 @@ mysql-schema-sync [-conf] [-dest] [-source] [-sync] [-drop]
         是否将修改同步到数据库中去，默认否
   -tables string
         待检查同步的数据库表，为空则是全部
+        eg : product_base,order_*
+  -skip_tables string
+        要跳过的数据库表
         eg : product_base,order_*
 
 </code>
