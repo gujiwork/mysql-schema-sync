@@ -3,10 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/admpub/mysql-schema-sync/internal"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/admpub/mysql-schema-sync/internal"
 )
 
 var configPath = flag.String("conf", "./config.json", "json config file path")
@@ -16,6 +17,7 @@ var drop = flag.Bool("drop", false, "drop fields,index,foreign key")
 var source = flag.String("source", "", "mysql dsn source,eg: test@(10.10.0.1:3306)/test\n\twhen it is not empty ignore [-conf] param")
 var dest = flag.String("dest", "", "mysql dsn dest,eg test@(127.0.0.1:3306)/imis")
 var tables = flag.String("tables", "", "table names to check\n\teg : product_base,order_*")
+var skipTables = flag.String("skip_tables", "", "table names to check\n\teg : product_base,order_*")
 var mailTo = flag.String("mail_to", "", "overwrite config's email.to")
 
 func init() {
@@ -56,6 +58,18 @@ func main() {
 			_name = strings.TrimSpace(_name)
 			if _name != "" {
 				cfg.Tables = append(cfg.Tables, _name)
+			}
+		}
+	}
+	if cfg.SkipTables == nil {
+		cfg.SkipTables = []string{}
+	}
+	if *skipTables != "" {
+		_ts := strings.Split(*skipTables, ",")
+		for _, _name := range _ts {
+			_name = strings.TrimSpace(_name)
+			if _name != "" {
+				cfg.SkipTables = append(cfg.SkipTables, _name)
 			}
 		}
 	}
