@@ -8,9 +8,18 @@ import (
 	"log"
 )
 
+type DBOperator interface {
+	GetTableNames() []string
+	GetTableSchema(name string) (schema string)
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	Begin() (*sql.Tx, error)
+}
+
+var _ DBOperator = new(MyDb)
+
 // MyDb db struct
 type MyDb struct {
-	Db     *sql.DB
+	*sql.DB
 	dbType string
 }
 
@@ -18,10 +27,10 @@ type MyDb struct {
 func NewMyDb(dsn string, dbType string) *MyDb {
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		panic(fmt.Sprintf("connect to db [%s] failed,", dsn, err))
+		panic(fmt.Sprintf("connect to db [%s] failed, %v", dsn, err))
 	}
 	return &MyDb{
-		Db:     db,
+		DB:     db,
 		dbType: dbType,
 	}
 }
@@ -83,5 +92,5 @@ func (mydb *MyDb) GetTableSchema(name string) (schema string) {
 // Query execute sql query
 func (mydb *MyDb) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	log.Println("[SQL]", "["+mydb.dbType+"]", query, args)
-	return mydb.Db.Query(query, args...)
+	return mydb.DB.Query(query, args...)
 }

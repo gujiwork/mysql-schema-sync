@@ -9,16 +9,27 @@ import (
 // SchemaSync 配置文件
 type SchemaSync struct {
 	Config   *Config
-	SourceDb *MyDb
-	DestDb   *MyDb
+	SourceDb DBOperator
+	DestDb   DBOperator
 }
 
 // NewSchemaSync 对一个配置进行同步
-func NewSchemaSync(config *Config) *SchemaSync {
+func NewSchemaSync(config *Config, dbOperators ...DBOperator) *SchemaSync {
 	s := new(SchemaSync)
 	s.Config = config
-	s.SourceDb = NewMyDb(config.SourceDSN, "source")
-	s.DestDb = NewMyDb(config.DestDSN, "dest")
+	switch len(dbOperators) {
+	case 2:
+		s.SourceDb = dbOperators[0]
+		s.DestDb = dbOperators[1]
+	case 1:
+		s.SourceDb = dbOperators[0]
+	}
+	if s.SourceDb == nil {
+		s.SourceDb = NewMyDb(config.SourceDSN, "source")
+	}
+	if s.DestDb == nil {
+		s.DestDb = NewMyDb(config.DestDSN, "dest")
+	}
 	return s
 }
 
@@ -225,7 +236,7 @@ func (sc *SchemaSync) SyncSQL4Dest(sqlStr string, sqls []string) error {
 	//how to enable allowMultiQueries?
 	if err != nil && len(sqls) > 1 {
 		log.Println("exec_mut_query failed,err=", err, ",now exec sqls foreach")
-		tx, errTx := sc.DestDb.Db.Begin()
+		tx, errTx := sc.DestDb.Begin()
 		if errTx == nil {
 			for _, sql := range sqls {
 				ret, err = tx.Query(sql)
@@ -253,14 +264,14 @@ func (sc *SchemaSync) SyncSQL4Dest(sqlStr string, sqls []string) error {
 }
 
 // CheckSchemaDiff 执行最终的diff
-func CheckSchemaDiff(cfg *Config) *Statics {
+func CheckSchemaDiff(cfg *Config, dbOperators ...DBOperator) *Statics {
 	statics := newStatics(cfg)
 	defer (func() {
 		statics.timer.stop()
 		statics.sendMailNotice()
 	})()
 
-	sc := NewSchemaSync(cfg)
+	sc := NewSchemaSync(cfg, dbOperators...)
 	newTables := sc.SourceDb.GetTableNames()
 	log.Println("source db table total:", len(newTables))
 
