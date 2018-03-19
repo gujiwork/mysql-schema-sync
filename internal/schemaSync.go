@@ -250,6 +250,8 @@ func (sc *SchemaSync) SyncSQL4Dest(sqlStr string, sqls []string) error {
 			} else {
 				tx.Rollback()
 			}
+		} else {
+			err = errTx
 		}
 	}
 	t.stop()
