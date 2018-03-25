@@ -72,7 +72,5 @@ func Sync(c *Config, mc *EmailConfig, dbOperators ...internal.DBOperator) (sta *
 			cfg.SendMailFail(err.Error())
 		}
 	})()
-
-	cfg.Check()
 	return internal.CheckSchemaDiff(cfg, dbOperators...), nil
 }
