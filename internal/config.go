@@ -71,17 +71,6 @@ func (cfg *Config) CheckMatchTables(name string) bool {
 	return false
 }
 
-// Check check config
-func (cfg *Config) Check() {
-	if cfg.SourceDSN == "" {
-		log.Fatal("source dns is empty")
-	}
-	if cfg.DestDSN == "" {
-		log.Fatal("dest dns is empty")
-	}
-	//	log.Println("config:\n", cfg)
-}
-
 // IsIgnoreIndex is index ignore
 func (cfg *Config) IsIgnoreIndex(table string, name string) bool {
 	for tname, dit := range cfg.AlterIgnore {

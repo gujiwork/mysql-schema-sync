@@ -1,8 +1,6 @@
 package sync
 
 import (
-	"fmt"
-	"log"
 	"strings"
 
 	"github.com/admpub/mysql-schema-sync/internal"
@@ -65,12 +63,5 @@ func Sync(c *Config, mc *EmailConfig, dbOperators ...internal.DBOperator) (sta *
 			}
 		}
 	}
-	defer (func() {
-		if e := recover(); e != nil {
-			log.Println(e)
-			err = fmt.Errorf("%s", e)
-			cfg.SendMailFail(err.Error())
-		}
-	})()
 	return internal.CheckSchemaDiff(cfg, dbOperators...), nil
 }

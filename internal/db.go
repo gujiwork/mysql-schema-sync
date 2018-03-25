@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	//load mysql
-	_ "github.com/go-sql-driver/mysql"
 	"log"
+
+	_ "github.com/go-sql-driver/mysql" //register mysql driver
 )
 
 type DBOperator interface {
@@ -25,6 +26,9 @@ type MyDb struct {
 
 // NewMyDb parse dsn
 func NewMyDb(dsn string, dbType string) *MyDb {
+	if len(dsn) == 0 {
+		log.Fatal(dbType + " dns is empty")
+	}
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		panic(fmt.Sprintf("connect to db [%s] failed, %v", dsn, err))
