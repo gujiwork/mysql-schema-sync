@@ -4,10 +4,13 @@ import (
 	"database/sql"
 	"log"
 	"regexp"
+
+	"github.com/admpub/mysql-schema-sync/internal"
 )
 
 var (
-	sqlTableName = regexp.MustCompile("CREATE TABLE [^`]*`([^`]+)` \\(")
+	sqlTableName                     = regexp.MustCompile("CREATE TABLE [^`]*`([^`]+)` \\(")
+	_            internal.DBOperator = &MySchemaData{}
 )
 
 // MySchemaData db schema data
@@ -53,5 +56,9 @@ func (m *MySchemaData) GetTableSchema(name string) (schema string) {
 // Query execute sql query
 func (m *MySchemaData) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	log.Println("[SQL]", "["+m.dbType+"]", query, args)
+	return nil, nil
+}
+
+func (m *MySchemaData) Begin() (*sql.Tx, error) {
 	return nil, nil
 }
