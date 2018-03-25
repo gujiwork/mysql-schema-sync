@@ -8,7 +8,7 @@ import (
 	"github.com/admpub/mysql-schema-sync/internal"
 )
 
-func Sync(c *Config, mc *EmailConfig) (sta *internal.Statics, err error) {
+func Sync(c *Config, mc *EmailConfig, dbOperators ...internal.DBOperator) (sta *internal.Statics, err error) {
 	cfg := new(internal.Config)
 	cfg.SourceDSN = c.SourceDSN
 	cfg.DestDSN = c.DestDSN
@@ -74,5 +74,5 @@ func Sync(c *Config, mc *EmailConfig) (sta *internal.Statics, err error) {
 	})()
 
 	cfg.Check()
-	return internal.CheckSchemaDiff(cfg), nil
+	return internal.CheckSchemaDiff(cfg, dbOperators...), nil
 }

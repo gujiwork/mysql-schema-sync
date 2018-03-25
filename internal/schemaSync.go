@@ -224,7 +224,10 @@ func (sc *SchemaSync) getSchemaDiff(alter *TableAlterData) string {
 
 // SyncSQL4Dest sync schema change
 func (sc *SchemaSync) SyncSQL4Dest(sqlStr string, sqls []string) error {
-	log.Println("Exec_SQL_START:\n>>>>>>\n", sqlStr, "\n<<<<<<<<\n")
+	log.Println("Exec_SQL_START:")
+	log.Println(">>>>>>")
+	log.Println(sqlStr)
+	log.Println("<<<<<<")
 	sqlStr = strings.TrimSpace(sqlStr)
 	if sqlStr == "" {
 		log.Println("sql_is_empty,skip")
@@ -292,7 +295,7 @@ func CheckSchemaDiff(cfg *Config, dbOperators ...DBOperator) *Statics {
 			fmt.Println(sd)
 			fmt.Println("")
 			relationTables := sd.SchemaDiff.RelationTables()
-			//			fmt.Println("relationTables:",table,relationTables)
+			//fmt.Println("relationTables:",table,relationTables)
 
 			//将所有有外键关联的单独放
 			groupKey := "multi"
