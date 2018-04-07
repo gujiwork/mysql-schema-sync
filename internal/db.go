@@ -3,10 +3,7 @@ package internal
 import (
 	"database/sql"
 	"fmt"
-	//load mysql
 	"log"
-
-	_ "github.com/go-sql-driver/mysql" //register mysql driver
 )
 
 type DBOperator interface {

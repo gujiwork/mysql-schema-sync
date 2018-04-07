@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/admpub/mysql-schema-sync/internal"
+	_ "github.com/go-sql-driver/mysql" //register mysql driver
 )
 
 var configPath = flag.String("conf", "./config.json", "json config file path")
