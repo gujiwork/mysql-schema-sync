@@ -5,12 +5,16 @@ import (
 	"html"
 	"log"
 	"os"
+	"time"
 )
 
-type statics struct {
-	timer  *myTimer
-	tables []*tableStatics
-	Config *Config
+type Statics struct {
+	timer     *myTimer
+	tables    []*tableStatics
+	Config    *Config
+	failedNum int
+	result    *string
+	diff      bool
 }
 
 type tableStatics struct {
@@ -21,15 +25,17 @@ type tableStatics struct {
 	schemaAfter string
 }
 
-func newStatics(cfg *Config) *statics {
-	return &statics{
-		timer:  newMyTimer(),
-		tables: make([]*tableStatics, 0),
-		Config: cfg,
+func newStatics(cfg *Config) *Statics {
+	return &Statics{
+		timer:     newMyTimer(),
+		tables:    make([]*tableStatics, 0),
+		Config:    cfg,
+		failedNum: -1,
+		diff:      true,
 	}
 }
 
-func (s *statics) newTableStatics(table string, sd *TableAlterData) *tableStatics {
+func (s *Statics) newTableStatics(table string, sd *TableAlterData) *tableStatics {
 	ts := &tableStatics{
 		timer: newMyTimer(),
 		table: table,
@@ -41,10 +47,70 @@ func (s *statics) newTableStatics(table string, sd *TableAlterData) *tableStatic
 	return ts
 }
 
-func (s *statics) toHTML() string {
-	code := "<h2>Result</h2>\n"
+func (s *Statics) String() string {
+	if s.result != nil {
+		return *s.result
+	}
+	result := s.toHTML()
+	s.result = &result
+	return result
+}
+
+func (s *Statics) ChangeTableNum() int {
+	return len(s.tables)
+}
+
+func (s *Statics) ChangeTables() []string {
+	tables := make([]string, len(s.tables))
+	for k, t := range s.tables {
+		tables[k] = t.table
+	}
+	return tables
+}
+
+func (s *Statics) FailedNum() int {
+	return s.alterFailedNum()
+}
+
+func (s *Statics) StartTime() time.Time {
+	return s.timer.start
+}
+
+func (s *Statics) Diff(on bool) *Statics {
+	s.diff = on
+	return s
+}
+
+func (s *Statics) EndTime() time.Time {
+	return s.timer.end
+}
+
+func (s *Statics) Elapsed() time.Duration {
+	return s.timer.end.Sub(s.timer.start)
+}
+
+func (s *Statics) toHTML() string {
+	cfg := s.Config
+	hostName, _ := os.Hostname()
+	code := "<h2>Info</h2>\n<pre>"
+	code += "  from : " + dsnSort(cfg.SourceDSN) + "\n"
+	code += "    to : " + dsnSort(cfg.DestDSN) + "\n"
+	code += " alter : " + fmt.Sprintf("%d", len(s.tables)) + " tables\n"
+	code += "<font color=green>  sync : " + fmt.Sprintf("%t", s.Config.Sync) + "</font>\n"
+	if s.Config.Sync {
+		fn := s.alterFailedNum()
+		code += "<font color=red>failed : " + fmt.Sprintf("%d", fn) + "</font>\n"
+	}
+	code += "\n"
+	code += "  host : " + hostName + "\n"
+	code += " start : " + s.timer.start.Format(timeFormatStd) + "\n"
+	code += "   end : " + s.timer.end.Format(timeFormatStd) + "\n"
+	code += "  used : " + s.timer.usedSecond() + "\n"
+
+	code += "</pre>\n"
+	code += "<h2>Result</h2>\n"
 	code += "<h3>Tables</h3>\n"
-	code += `<table class='tb_1'>
+	code += `<table class='table table-bordered tb_1'>
 		<thead>
 			<tr>
 			<th width="60px">no</th>
@@ -78,15 +144,17 @@ func (s *statics) toHTML() string {
 		code += html.EscapeString(tb.alter.String()) + "\n\n"
 	}
 	code += "</pre>\n\n"
-
+	if !s.diff {
+		return code
+	}
 	code += "<h3>Detail</h3>\n"
-	code += `<table class='tb_1'>
+	code += `<table class='table table-bordered tb_1'>
 		<thead>
 			<tr>
 			<th width="40px">no</th>
 			<th width="80px">table</th>
-			<th>&nbsp;</th>
-			<th>&nbsp;</th>
+			<th>source</th>
+			<th>destination</th>
 			</tr>
 		</thead><tbody>
 		`
@@ -101,7 +169,7 @@ func (s *statics) toHTML() string {
 				code += "<font color=red>failed," + tb.alterRet.Error() + "</font>"
 			}
 		} else {
-			code += "no sync"
+			code += "(no sync)"
 		}
 		code += "</td>\n"
 		code += "<td valign=top><b>source schema:</b><br/>" + htmlPre(tb.alter.SchemaDiff.Source.SchemaRaw) + "</td>\n"
@@ -117,17 +185,22 @@ func (s *statics) toHTML() string {
 	return code
 }
 
-func (s *statics) alterFailedNum() int {
+func (s *Statics) alterFailedNum() int {
+	if s.failedNum > -1 {
+		return s.failedNum
+	}
 	n := 0
 	for _, tb := range s.tables {
 		if tb.alterRet != nil {
 			n++
 		}
 	}
+	s.failedNum = n
 	return n
 }
 
-func (s *statics) sendMailNotice(cfg *Config) {
+func (s *Statics) sendMailNotice() {
+	cfg := s.Config
 	if cfg.Email == nil {
 		log.Println("mail conf is not set,skip send mail")
 		return
@@ -138,33 +211,17 @@ func (s *statics) sendMailNotice(cfg *Config) {
 		return
 	}
 	title := "[mysql_schema_sync] " + fmt.Sprintf("%d", alterTotal) + " tables change [" + dsnSort(cfg.DestDSN) + "]"
-	body := ""
+	var body string
 
 	if !s.Config.Sync {
 		title += "[preview]"
 		body += "<font color=red>this is preview,all sql never execute!</font>\n"
-	}
-
-	hostName, _ := os.Hostname()
-	body += "<h2>Info</h2>\n<pre>"
-	body += "  from : " + dsnSort(cfg.SourceDSN) + "\n"
-	body += "    to : " + dsnSort(cfg.DestDSN) + "\n"
-	body += " alter : " + fmt.Sprintf("%d", len(s.tables)) + " tables\n"
-	body += "<font color=green>  sync : " + fmt.Sprintf("%t", s.Config.Sync) + "</font>\n"
-	if s.Config.Sync {
+	} else {
 		fn := s.alterFailedNum()
-		body += "<font color=red>failed : " + fmt.Sprintf("%d", fn) + "</font>\n"
 		if fn > 0 {
 			title += " [failed=" + fmt.Sprintf("%d", fn) + "]"
 		}
 	}
-	body += "\n"
-	body += "  host : " + hostName + "\n"
-	body += " start : " + s.timer.start.Format(timeFormatStd) + "\n"
-	body += "   end : " + s.timer.end.Format(timeFormatStd) + "\n"
-	body += "  used : " + s.timer.usedSecond() + "\n"
-
-	body += "</pre>\n"
 	body += s.toHTML()
 	cfg.Email.SendMail(title, body)
 }

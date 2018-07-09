@@ -12,6 +12,7 @@ type Config struct {
 	DestDSN     string                       `json:"dest"`
 	AlterIgnore map[string]*AlterIgnoreTable `json:"alter_ignore"`
 	Tables      []string                     `json:"tables"`
+	SkipTables  []string                     `json:"skip_tables"`
 	Email       *EmailStruct                 `json:"email"`
 	ConfigPath  string
 	Sync        bool
@@ -45,6 +46,19 @@ func (cfg *Config) IsIgnoreField(table string, name string) bool {
 	return false
 }
 
+// IsSkipTables check table is skip
+func (cfg *Config) IsSkipTables(name string) bool {
+	if len(cfg.SkipTables) == 0 {
+		return false
+	}
+	for _, tableName := range cfg.SkipTables {
+		if simpleMatch(tableName, name, "IsSkipTables") {
+			return true
+		}
+	}
+	return false
+}
+
 // CheckMatchTables check table is match
 func (cfg *Config) CheckMatchTables(name string) bool {
 	if len(cfg.Tables) == 0 {
@@ -56,17 +70,6 @@ func (cfg *Config) CheckMatchTables(name string) bool {
 		}
 	}
 	return false
-}
-
-// Check check config
-func (cfg *Config) Check() {
-	if cfg.SourceDSN == "" {
-		log.Fatal("source dns is empty")
-	}
-	if cfg.DestDSN == "" {
-		log.Fatal("dest dns is empty")
-	}
-	//	log.Println("config:\n", cfg)
 }
 
 // IsIgnoreIndex is index ignore

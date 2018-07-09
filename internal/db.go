@@ -11,20 +11,32 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+type DBOperator interface {
+	GetTableNames() []string
+	GetTableSchema(name string) (schema string)
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	Begin() (*sql.Tx, error)
+}
+
+var _ DBOperator = new(MyDb)
+
 // MyDb db struct
 type MyDb struct {
-	Db     *sql.DB
+	*sql.DB
 	dbType string
 }
 
 // NewMyDb parse dsn
 func NewMyDb(dsn string, dbType string) *MyDb {
+	if len(dsn) == 0 {
+		log.Fatal(dbType + " dns is empty")
+	}
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		panic(fmt.Sprintf("connect to db [%s] failed, %s", dsn, err.Error()))
+		panic(fmt.Sprintf("connect to db [%s] failed, %v", dsn, err))
 	}
 	return &MyDb{
-		Db:     db,
+		DB:     db,
 		dbType: dbType,
 	}
 }
@@ -32,7 +44,7 @@ func NewMyDb(dsn string, dbType string) *MyDb {
 // GetDestDbName get database
 func (mydb *MyDb) GetDestDbName(dbName string) {
 	sql := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s;", dbName)
-	_, err := mydb.Db.Exec(sql)
+	_, err := mydb.Exec(sql)
 	if err != nil {
 		panic(sql + "failed: " + err.Error())
 	}
@@ -95,5 +107,5 @@ func (mydb *MyDb) GetTableSchema(name string) (schema string) {
 // Query execute sql query
 func (mydb *MyDb) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	log.Println("[SQL]", "["+mydb.dbType+"]", query, args)
-	return mydb.Db.Query(query, args...)
+	return mydb.DB.Query(query, args...)
 }

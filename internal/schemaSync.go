@@ -11,16 +11,27 @@ import (
 // SchemaSync 配置文件
 type SchemaSync struct {
 	Config   *Config
-	SourceDb *MyDb
-	DestDb   *MyDb
+	SourceDb DBOperator
+	DestDb   DBOperator
 }
 
 // NewSchemaSync 对一个配置进行同步
-func NewSchemaSync(config *Config) *SchemaSync {
+func NewSchemaSync(config *Config, dbOperators ...DBOperator) *SchemaSync {
 	s := new(SchemaSync)
 	s.Config = config
-	s.SourceDb = NewMyDb(config.SourceDSN, "source")
-	s.DestDb = NewMyDb(config.DestDSN, "dest")
+	switch len(dbOperators) {
+	case 2:
+		s.SourceDb = dbOperators[0]
+		s.DestDb = dbOperators[1]
+	case 1:
+		s.SourceDb = dbOperators[0]
+	}
+	if s.SourceDb == nil {
+		s.SourceDb = NewMyDb(config.SourceDSN, "source")
+	}
+	if s.DestDb == nil {
+		s.DestDb = NewMyDb(config.DestDSN, "dest")
+	}
 	return s
 }
 
@@ -215,7 +226,10 @@ func (sc *SchemaSync) getSchemaDiff(alter *TableAlterData) string {
 
 // SyncSQL4Dest sync schema change
 func (sc *SchemaSync) SyncSQL4Dest(sqlStr string, sqls []string) error {
-	log.Println("Exec_SQL_START:\nSTART>>>>>>\n", sqlStr, "\n<<<<<<<<END\n")
+	log.Println("Exec_SQL_START:")
+	log.Println(">>>>>>")
+	log.Println(sqlStr)
+	log.Println("<<<<<<")
 	sqlStr = strings.TrimSpace(sqlStr)
 	if sqlStr == "" {
 		log.Println("sql_is_empty,skip")
@@ -227,7 +241,7 @@ func (sc *SchemaSync) SyncSQL4Dest(sqlStr string, sqls []string) error {
 	//how to enable allowMultiQueries?
 	if err != nil && len(sqls) > 1 {
 		log.Println("exec_mut_query failed,err=", err, ",now exec sqls foreach")
-		tx, errTx := sc.DestDb.Db.Begin()
+		tx, errTx := sc.DestDb.Begin()
 		if errTx == nil {
 			for _, sql := range sqls {
 				ret, err = tx.Query(sql)
@@ -241,6 +255,8 @@ func (sc *SchemaSync) SyncSQL4Dest(sqlStr string, sqls []string) error {
 			} else {
 				tx.Rollback()
 			}
+		} else {
+			err = errTx
 		}
 	}
 	t.stop()
@@ -255,14 +271,14 @@ func (sc *SchemaSync) SyncSQL4Dest(sqlStr string, sqls []string) error {
 }
 
 // CheckSchemaDiff 执行最终的diff
-func CheckSchemaDiff(cfg *Config) {
+func CheckSchemaDiff(cfg *Config, dbOperators ...DBOperator) *Statics {
 	statics := newStatics(cfg)
 	defer (func() {
 		statics.timer.stop()
-		statics.sendMailNotice(cfg)
+		statics.sendMailNotice()
 	})()
 
-	sc := NewSchemaSync(cfg)
+	sc := NewSchemaSync(cfg, dbOperators...)
 	newTables := sc.SourceDb.GetTableNames()
 	log.Println("source db table total:", len(newTables))
 
@@ -270,7 +286,7 @@ func CheckSchemaDiff(cfg *Config) {
 
 	for index, table := range newTables {
 		log.Printf("Index : %d Table : %s\n", index, table)
-		if !cfg.CheckMatchTables(table) {
+		if !cfg.CheckMatchTables(table) || cfg.IsSkipTables(table) {
 			log.Println("Table:", table, "skip")
 			continue
 		}
@@ -282,7 +298,7 @@ func CheckSchemaDiff(cfg *Config) {
 
 			fmt.Println("")
 			relationTables := sd.SchemaDiff.RelationTables()
-			//			fmt.Println("relationTables:",table,relationTables)
+			//fmt.Println("relationTables:",table,relationTables)
 
 			//将所有有外键关联的单独放
 			groupKey := "multi"
@@ -353,4 +369,5 @@ run_sync:
 		log.Println("execute_all_sql_done,success_total:", countSuccess, "failed_total:", countFailed)
 	}
 
+	return statics
 }
