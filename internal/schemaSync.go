@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 // SchemaSync 配置文件
@@ -293,7 +291,7 @@ func CheckSchemaDiff(cfg *Config, dbOperators ...DBOperator) *Statics {
 
 		sd := sc.getAlterDataByTable(table)
 
-		spew.Dump(sd)
+		//spew.Dump(sd)
 		if sd.Type != alterTypeNo {
 
 			fmt.Println("")
